@@ -2,7 +2,7 @@ services:
   - type: web
     name: blogify-jitt
     runtime: python
-    buildCommand: pip install -r requirements.txt && flask db upgrade
+    buildCommand: pip install -r requirements.txt
     startCommand: gunicorn fast:app
     envVars:
       - key: FLASK_APP
