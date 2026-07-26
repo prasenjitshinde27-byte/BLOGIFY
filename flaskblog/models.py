@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from itsdangerous import URLSafeTimedSerializer as Serializer
+from itsdangerous.exc import BadData
 from flask import current_app
 from flaskblog import db, login_manager 
 from flask_login import UserMixin
@@ -28,8 +29,14 @@ class User(db.Model, UserMixin):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
             user_id = s.loads(token, max_age=1800)['user_id']
-        except Exception:
+        except BadData:
+            # Invalid, tampered, or expired token — treat as no user.
             return None
+        except Exception:
+            # Unexpected failure (e.g. misconfigured SECRET_KEY): log and
+            # re-raise so it is not silently swallowed as an invalid token.
+            current_app.logger.exception('Failed to verify password reset token')
+            raise
         return User.query.get(user_id)
 
 

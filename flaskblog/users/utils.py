@@ -1,7 +1,7 @@
 import os
-import secrets
-from PIL import Image
-from flask import url_for, current_app, flash
+import secrets 
+from PIL import Image, UnidentifiedImageError
+from flask import url_for, current_app
 from flask_mail import Message
 from flaskblog import mail
 
@@ -12,17 +12,26 @@ def save_picture(form_picture):
     picture_fn = random_hex + f_ext
     picture_path = os.path.join(current_app.root_path, 'static/profile_pics', picture_fn)
 
-    # Delete old profile picture if it's not the default
+    # Process and persist the new picture first. If the upload is not a valid
+    # image, this raises before we touch the existing avatar.
+    output_size = (125, 125)
+    try:
+        i = Image.open(form_picture)
+        i.thumbnail(output_size)
+        i.save(picture_path)
+    except UnidentifiedImageError as exc:
+        raise OSError('Uploaded file is not a valid image') from exc
+
+    # Only after the new picture is safely saved do we remove the old one, so a
+    # failed upload never leaves the user without an avatar.
     from flask_login import current_user
     if current_user.image_file != 'default.jpg':
         old_picture_path = os.path.join(current_app.root_path, 'static/profile_pics', current_user.image_file)
         if os.path.exists(old_picture_path):
-            os.remove(old_picture_path)
-
-    output_size = (125, 125)
-    i = Image.open(form_picture)
-    i.thumbnail(output_size)
-    i.save(picture_path)
+            try:
+                os.remove(old_picture_path)
+            except OSError:
+                current_app.logger.warning('Could not remove old profile picture: %s', old_picture_path)
 
     return picture_fn
 
