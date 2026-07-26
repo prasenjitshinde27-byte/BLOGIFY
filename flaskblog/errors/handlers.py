@@ -1,7 +1,10 @@
-from flask import Blueprint, render_template
-import traceback
+import logging
+
+from flask import Blueprint, render_template, current_app
 
 errors = Blueprint('errors', __name__)
+
+logger = logging.getLogger(__name__)
 
 
 @errors.app_errorhandler(404)
@@ -16,8 +19,7 @@ def error_403(error):
 
 @errors.app_errorhandler(500)
 def error_500(error):
-    # Temporarily show full traceback for debugging on Render
-    tb = traceback.format_exc()
-    return f"<pre style='background:#111;color:#f88;padding:20px;font-size:13px;'><b>500 Error — Debug Info</b>\n\n{tb}</pre>", 500
-
+    # Log the full traceback server-side (visible in Render logs) — never expose to users
+    current_app.logger.exception("Unhandled 500 error: %s", error)
+    return render_template('errors/500.html'), 500
 
