@@ -20,6 +20,18 @@ class Config:
         _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
     SQLALCHEMY_DATABASE_URI = _db_url
 
+    # ── Session / Cookie security ─────────────────────────────────────────────
+    # On Render (HTTPS), the browser only sends cookies marked Secure.
+    # SameSite=Lax prevents CSRF while still allowing normal navigation.
+    SESSION_COOKIE_SECURE   = os.environ.get('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+
+    # ── CSRF ──────────────────────────────────────────────────────────────────
+    # Disable strict SSL Referer check — it breaks behind Render's reverse proxy
+    # (ProxyFix in fast.py handles the real origin correctly instead).
+    WTF_CSRF_SSL_STRICT = False
+
     # ── Mail (SMTP) ──────────────────────────────────────────────────────────
     # For LOCAL DEVELOPMENT: use Mailtrap (free fake inbox at mailtrap.io)
     #   MAIL_SERVER  = sandbox.smtp.mailtrap.io
