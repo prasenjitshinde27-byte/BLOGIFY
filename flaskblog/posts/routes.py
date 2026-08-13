@@ -1,9 +1,10 @@
 from flask import (render_template, url_for, flash,
-                   redirect, request, abort, Blueprint, jsonify)
+                   redirect, request, Blueprint, jsonify)
 from flask_login import current_user, login_required
 from flaskblog import db
 from flaskblog.models import Post, Comment, Like
 from flaskblog.posts.forms import PostForm, CommentForm
+from flaskblog.utils import abort_if_not_author
 
 posts = Blueprint('posts', __name__)
 
@@ -43,8 +44,7 @@ def post(post_id):
 def update_post(post_id):
     post = Post.query.get_or_404(post_id)
     # Added authorization check — only the author can update
-    if post.author != current_user:
-        abort(403)
+    abort_if_not_author(post)
     form = PostForm()
         
     if form.validate_on_submit():
@@ -72,8 +72,7 @@ def update_post(post_id):
 def delete_post(post_id):
     post = Post.query.get_or_404(post_id)
 
-    if post.author != current_user:
-        abort(403)
+    abort_if_not_author(post)
 
     db.session.delete(post)
     db.session.commit()

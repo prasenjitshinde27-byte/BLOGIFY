@@ -6,6 +6,20 @@ from wtforms.validators import DataRequired, Length, Email, EqualTo,ValidationEr
 from flaskblog.models import User
 
 
+def validate_unique_username(username, exclude=None):
+    if username.data == exclude:
+        return
+    if User.query.filter_by(username=username.data).first():
+        raise ValidationError('That username is taken. Please choose a different one.')
+
+
+def validate_unique_email(email, exclude=None):
+    if email.data == exclude:
+        return
+    if User.query.filter_by(email=email.data).first():
+        raise ValidationError('That email is taken. Please choose a different one.')
+
+
 
 class RegistrationForm(FlaskForm):
     username = StringField(
@@ -31,15 +45,10 @@ class RegistrationForm(FlaskForm):
     submit = SubmitField('Sign Up')
 
     def validate_username(self, username):
-        user = User.query.filter_by(username=username.data).first()
-        if user:
-         raise ValidationError(' That username is taken. Please Choose a different one.') 
-        
-    
+        validate_unique_username(username)
+
     def validate_email(self, email):
-        user = User.query.filter_by(email=email.data).first()
-        if user:
-         raise ValidationError(' That email is taken. Please Choose a different one.') 
+        validate_unique_email(email)
 
 
 
@@ -71,16 +80,10 @@ class UpdateAccountForm(FlaskForm):
     submit = SubmitField('Update')
 
     def validate_username(self, username):
-        if username.data != current_user.username:
-            user = User.query.filter_by(username=username.data).first()
-            if user:
-                raise ValidationError('That username is taken. Please choose a different one.')
+        validate_unique_username(username, exclude=current_user.username)
 
     def validate_email(self, email):
-        if email.data != current_user.email:
-            user = User.query.filter_by(email=email.data).first()
-            if user:
-                raise ValidationError('That email is taken. Please choose a different one.')
+        validate_unique_email(email, exclude=current_user.email)
             
     
 class DeleteForm(FlaskForm):
